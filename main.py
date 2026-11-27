@@ -5,6 +5,7 @@ from sqlalchemy import text
 from database import engine, iniciar
 from pathlib import Path
 import secrets
+from seguridad import hash_clave, verificar
 app=FastAPI(title='Portal universitario')
 iniciar()
 sesiones={}
@@ -39,8 +40,8 @@ def consultar(sql,**params):
 def inicio(): return FileResponse(Path(__file__).parent/'index.html')
 @app.post('/login')
 def login(d:Login):
-    filas=consultar('SELECT * FROM usuarios WHERE codigo=:c AND clave=:p',c=d.codigo,p=d.clave)
-    if not filas: raise HTTPException(401,'Credenciales incorrectas')
+    filas=consultar('SELECT * FROM usuarios WHERE codigo=:c',c=d.codigo)
+    if not filas or not verificar(d.clave,filas[0]['clave']): raise HTTPException(401,'Credenciales incorrectas')
     u={k:filas[0][k] for k in ('codigo','nombre','rol')}; token=secrets.token_urlsafe(32); sesiones[token]=u
     return dict(token=token,**u)
 @app.get('/materias')
@@ -79,5 +80,5 @@ def reportes(authorization:str|None=Header(None)):
 def registrar(d:Alumno,authorization:str|None=Header(None)):
     u=usuario(authorization); permiso(u,'administrativo','admin')
     if consultar('SELECT codigo FROM usuarios WHERE codigo=:c',c=d.codigo): raise HTTPException(409,'Código duplicado')
-    with engine.begin() as c: c.execute(text('INSERT INTO usuarios VALUES (:c,:n,:p,:r)'),dict(c=d.codigo,n=d.nombre,p=d.clave,r='estudiante'))
+    with engine.begin() as c: c.execute(text('INSERT INTO usuarios VALUES (:c,:n,:p,:r)'),dict(c=d.codigo,n=d.nombre,p=hash_clave(d.clave),r='estudiante'))
     return {'mensaje':'Estudiante registrado'}
