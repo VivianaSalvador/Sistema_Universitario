@@ -26,3 +26,7 @@ def iniciar():
         for codigo, clave in c.execute(text("SELECT codigo,clave FROM usuarios")).all():
             if ":" not in clave:
                 c.execute(text("UPDATE usuarios SET clave=:p WHERE codigo=:c"),dict(p=hash_clave(clave),c=codigo))
+
+def consultar(sql,**params):
+    with engine.connect() as c: return [dict(r) for r in c.execute(text(sql),params).mappings()]
+
