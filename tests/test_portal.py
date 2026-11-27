@@ -1,6 +1,3 @@
-import os,tempfile
-from pathlib import Path
-os.environ['DATABASE_URL']='sqlite:///'+str(Path(tempfile.mkdtemp())/'test.db')
 from fastapi.testclient import TestClient
 from main import app
 from database import consultar
