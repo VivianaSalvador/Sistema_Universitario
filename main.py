@@ -27,6 +27,12 @@ def login(d:Login):
     if not filas or not verificar(d.clave,filas[0]['clave']): raise HTTPException(401,'Credenciales incorrectas')
     u={k:filas[0][k] for k in ('codigo','nombre','rol')}; token=secrets.token_urlsafe(32); sesiones[token]=u
     return dict(token=token,**u)
+@app.post('/logout')
+def logout(authorization:str|None=Header(None)):
+    usuario(authorization)
+    sesiones.pop(authorization, None)
+    return {'mensaje':'Sesión cerrada'}
+
 @app.get('/materias')
 def materias(authorization:str|None=Header(None)):
     u=usuario(authorization); permiso(u,'estudiante'); return consultar('SELECT materia FROM notas WHERE alumno=:a',a=u['codigo'])
